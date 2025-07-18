@@ -74,35 +74,7 @@ def download_accentdb(accent_list: List) -> Tuple[List, List]:
     
     american_folders_to_delete = Path(accent_data / "american")
     delete_american_folders(american_folders_to_delete)
-
-    # # Move each accent class folder to a parent folder for the classification format
-    # def move_folders_to_parent(folders_to_move: List, new_parent_folder: str):
-    #     """ Create the new parent folder if not exist and moves all specified folders to the newly created folder.
-        
-    #     Args:
-    #     folders_to_move: An array consisting of all the accent folder paths to be moved to the parent folder
-    #     new_parent_folder: Name of the new parent folder to be created
-
-    #     Returns:
-    #     A message showing the successful moving of the folders
-        
-    #     Raise:
-    #     Exception: If there is any error while moving the folders
-    #     """
-    #     os.makedirs(new_parent_folder, exist_ok=True)
-
-    #     for folder in folders_to_move:
-    #         try:
-    #             folder_name = os.path.basename(folder)
-    #             destination = os.path.join(new_parent_folder, folder_name)
-    #             shutil.move(folder, destination)
-    #         except Exception as e:
-    #             print(f"Error moving the folders {e}")
-    #     print("Folders moved successfully")
     
-    # parent_folder = "accent_db"
-    # move_folders_to_parent(accent_list, parent_folder)
-
     # Prepare and return audio list
     audio_files = list(data_path.glob("*/*/*.wav"))
     data = [(file, file.parent.parent.stem) for file in audio_files]
