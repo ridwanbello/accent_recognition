@@ -40,22 +40,22 @@ def download_accentdb(accent_list: List) -> Tuple[List, List]:
     output_filename = data_path / "accentDB_extended.tar.gz"
     gdown.download(url, str(output_filename), quiet=False)
     zipped_path = Path(data_path / "accentDB_extended.tar.gz")
-    extracted_data = Path(data_path / "extracted_data")
+    extracted_path = Path(data_path / "extracted_data")
     # Unzip the data
     with tarfile.open(zipped_path, 'r:gz') as tar:
-        tar.extractall(path=extracted_data)
+        tar.extractall(path=extracted_path)
 
-    audio_data = Path(extracted_data / "data")
+    audio_path = Path(extracted_path / "data")
 
-    for dirpath, dirnames, filenames in os.walk(audio_data):
+    for dirpath, dirnames, filenames in os.walk(audio_path):
         print(f"There are {len(dirnames)} directories and {len(filenames)} images in '{dirpath}'.")
-    accent_data = data_path / "accent_data"
-    # The new folder that will house the main data will be called "accent_data"
-    os.makedirs(accent_data, exist_ok=True)
-    # Move folders in selected accented to a new folder called "accent_data"
+    main_path = data_path / "accent_data"
+    # The new folder that will house the main data will be called "main_path"
+    os.makedirs(main_path, exist_ok=True)
+    # Move folders in selected accented to a new folder called "main_path"
     for folder in accent_list:
-        src_path = os.path.join(audio_data, folder)
-        dest_path = os.path.join(accent_data, folder)
+        src_path = os.path.join(audio_path, folder)
+        dest_path = os.path.join(main_path, folder)
 
         if os.path.exists(src_path):
             shutil.copytree(src_path, dest_path)
@@ -73,14 +73,14 @@ def download_accentdb(accent_list: List) -> Tuple[List, List]:
             else:
                 print("Folder does not exist.")
 
-    american_folders_to_delete = Path(accent_data / "american")
+    american_folders_to_delete = Path(main_path / "american")
     delete_american_folders(american_folders_to_delete)
 
     # Prepare and return audio list
-    audio_files = list(accent_data.glob("*/*/*.wav"))
+    audio_files = list(main_path.glob("*/*/*.wav"))
     data = [(file, file.parent.parent.stem) for file in audio_files]
     audio_list, label_list = zip(*data)
-    print(f"There are {len(audio_list)} audio samples returned.")
+    print(f"\nThere are {len(audio_list)} audio samples returned.")
     return audio_list, label_list
 
-# Commit 3:  Added extra comment, minor error changes from data_path to accent_data
+# Commit 3:  Added extra comment, minor error changes from data_path to main_path

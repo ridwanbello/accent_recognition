@@ -86,7 +86,7 @@ def download_speechaccentarchive_data(accent_list: List) -> Tuple[List, List]:
     # Get all speech into list format for easy conversion into Pytorch Dataset format
     audio_path_list = [os.path.join(audio_path, filename) for filename in filtered_df["speech"]]
     labels_list = list(filtered_df["labels"])
-    print(f" There are {len(audio_path_list)} audio files with corresponding {len(labels_list)} labels")
+    print(f"\nThere are {len(audio_path_list)} audio files with corresponding {len(labels_list)} labels")
     return audio_path_list, labels_list
 
 
