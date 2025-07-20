@@ -43,8 +43,6 @@ def check_folder_len(folder_path: str) -> str:
   except Exception as e:
       print(f"An error occurred: {e}")
 
-
-
 # Function to move folders to parent
 def move_folders_to_parent(folders_to_move, new_parent_folder):
     """ Moves a list of folders to a new parent folder.
