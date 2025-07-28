@@ -97,4 +97,5 @@ def train_test_split_80_10_10(speech_data):
 # signal, label = next(iter(train_loader))
 
 
-# def afrispeech_process()
+def afrispeech_process():
+    return "yes"
