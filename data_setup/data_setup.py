@@ -95,3 +95,6 @@ def train_test_split_80_10_10(speech_data):
 # train_loader, val_loader, test_loader = train_test_split_80_10_10(speech_data)
 # len(train_loader), len(val_loader), len(test_loader)
 # signal, label = next(iter(train_loader))
+
+
+# def afrispeech_process()
