@@ -1,4 +1,6 @@
-# Each accents in the Afrispeech dataset can be fetched by running:
+# Data Download setup for Accent classification 
+
+For the Afrispeech dataset on HuggingFace, `datasets==2.12.0` and `fsspec==2023.9.2` versions are recommended
 
 ## To create a dataset for classifying three region -  West Africa, East Africa, and South Africa, a sample code is shown below
 

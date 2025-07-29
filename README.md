@@ -6,7 +6,7 @@ Accent Recognition
 ``` python
 
 try:
-    from data_download.afrispeech_data_setup import process_afrispeech_batch`
+    from data_download.afrispeech_data_setup import process_afrispeech_batch
 except:
    
     !git clone https://github.com/ridwanbello/accent_recognition
