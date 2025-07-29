@@ -5,7 +5,7 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, classification_report
 from tqdm.auto import tqdm
-
+from utils import EarlyStopping
 # Setup device 
 # Stup device for device-agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -108,6 +108,14 @@ def train(model: torch.nn.Module,
         test_loss, test_acc = test_step(model=model,
             dataloader=test_dataloader,
             loss_fn=loss_fn)
+        
+        # Add early stopping to avoid overfitting
+        early_stopper = EarlyStopping(patience=3, min_delta=0.01, mode='min')
+
+        early_stopper(test_loss)
+        if early_stopper.early_stop:
+            print("Early stopping triggered.")
+            break
 
         # 4. Print out what's happening
         print(
@@ -117,6 +125,8 @@ def train(model: torch.nn.Module,
             f"test_loss: {test_loss:.4f} | "
             f"test_acc: {test_acc:.4f}"
         )
+
+    
 
         # 5. Update results dictionary
         # Ensure all data is moved to CPU and converted to float for storage
@@ -233,3 +243,5 @@ def evaluate_model(model: torch.nn.Module, dataloader: torch.utils.data.DataLoad
   print(report)
 
   return acc, report
+
+

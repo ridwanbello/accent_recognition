@@ -75,21 +75,22 @@ class AccentDataset(Dataset):
 
 # Splitting the data return in Dataset format into 80 for training, 10 for validation and 10 for Testing
 def train_test_split_80_10_10(speech_data):
-  """ Split data into 80-10-10
-  Args: speech_data: data should be a series of (audio,label) format
-  """
-  train_size = int(0.8 * len(speech_data))
-  val_size = len(speech_data) - train_size
-  test_size = val_size = int(val_size / 2)
+    """
+    Splits a dataset into 80% training, 10% validation, and 10% testing sets.
+    """
+    train_size = int(0.8 * len(speech_data))
+    val_size = int(0.1 * len(speech_data))
+    # To ensure the splits add up to the total length
+    test_size = len(speech_data) - train_size - val_size  
 
-  generator = torch.Generator().manual_seed(42)
-  train_subset, val_subset, test_subset = random_split(speech_data, [train_size, val_size, test_size], generator=generator)
+    generator = torch.Generator().manual_seed(42)
+    train_subset, val_subset, test_subset = torch.utils.data.random_split(speech_data, [train_size, val_size, test_size], generator=generator)
 
-  train_loader = DataLoader(train_subset, batch_size=32, shuffle=True)
-  val_loader = DataLoader(val_subset, batch_size=32, shuffle=False)
-  test_loader = DataLoader(test_subset, batch_size=32, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=32, shuffle=True)
+    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=32, shuffle=False)
+    test_loader = torch.utils.data.DataLoader(test_subset, batch_size=32, shuffle=False)
 
-  return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader
 
 # Sample usage
 # train_loader, val_loader, test_loader = train_test_split_80_10_10(speech_data)
