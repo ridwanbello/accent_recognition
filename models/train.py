@@ -92,74 +92,6 @@ def train(model: torch.nn.Module,
           loss_fn: torch.nn.Module = nn.CrossEntropyLoss(),
           epochs: int = 5):
 
-    # Create empty results dictionary
-    results = {"train_loss": [],
-        "train_acc": [],
-        "test_loss": [],
-        "test_acc": []
-    }
-
-    # Loop through training and testing steps for a number of epochs
-    for epoch in tqdm(range(epochs)):
-        train_loss, train_acc = train_step(model=model,
-                                           dataloader=train_dataloader,
-                                           loss_fn=loss_fn,
-                                           optimizer=optimizer)
-        test_loss, test_acc = test_step(model=model,
-            dataloader=test_dataloader,
-            loss_fn=loss_fn)
-
-        # Print out what's happening
-        print(
-            f"Epoch: {epoch+1} | "
-            f"train_loss: {train_loss:.4f} | "
-            f"train_acc: {train_acc:.4f} | "
-            f"test_loss: {test_loss:.4f} | "
-            f"test_acc: {test_acc:.4f}"
-        )
-
-        # Update results dictionary
-        # Ensure all data is moved to CPU and converted to float for storage
-        results['model'] = model.__class__.__name__
-        results["train_loss"].append(train_loss.item() if isinstance(train_loss, torch.Tensor) else train_loss)
-        results["train_acc"].append(train_acc.item() if isinstance(train_acc, torch.Tensor) else train_acc)
-        results["test_loss"].append(test_loss.item() if isinstance(test_loss, torch.Tensor) else test_loss)
-        results["test_acc"].append(test_acc.item() if isinstance(test_acc, torch.Tensor) else test_acc)
-
-    # Return the filled results at the end of the epochs
-    return results
-
-# Train model
-def train_model(seed, num_epochs, train_loader, val_loader, model, loss_fn, optimizer):
-  """ Function to train the model """
-  torch.manual_seed(seed)
-  torch.cuda.manual_seed(seed)
-
-  # Start the timer
-  from timeit import default_timer as timer
-  start_time = timer()
-
-  # Train model_0
-  model_results = train(model=model,
-                          train_dataloader=train_loader,
-                          test_dataloader=val_loader,
-                          optimizer=optimizer,
-                          loss_fn=loss_fn,
-                          epochs=num_epochs)
-
-  # End the timer and print out how long it took
-  end_time = timer()
-  print(f"Total training time: {end_time-start_time:.3f} seconds")
-  return model_results
-
-# Define the main training function
-def train(model: torch.nn.Module,
-          train_dataloader: torch.utils.data.DataLoader,
-          test_dataloader: torch.utils.data.DataLoader,
-          optimizer: torch.optim.Optimizer,
-          loss_fn: torch.nn.Module = nn.CrossEntropyLoss(),
-          epochs: int = 5):
-
     # 2. Create empty results dictionary
     results = {"train_loss": [],
         "train_acc": [],
@@ -220,6 +152,7 @@ def train_model(seed, num_epochs, model, train_loader, val_loader, loss_fn, opti
   end_time = timer()
   print(f"Total training time: {end_time-start_time:.3f} seconds")
   return model_results
+
 
 # Sample Usage
 # model_results = train_model(seed=31, num_epochs=3, model=model_0, train_loader=train_loader, val_loader = val_loader, loss_fn = loss_fn, optimizer = optimizer)

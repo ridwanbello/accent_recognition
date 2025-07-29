@@ -64,7 +64,7 @@ class AccentDataset(Dataset):
           signal = torch.mean(signal, dim=0, keepdim=True)
       return signal
   
-  def _find_classes(audio_path):
+  def _find_classes(self, audio_path):
     classes = sorted(entry.name for entry in os.scandir(audio_path) if entry.is_dir())
     if not classes:
         raise FileNotFoundError(f"Couldn't find any classes in {audio_path}.")
