@@ -5,10 +5,18 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, classification_report
 from tqdm.auto import tqdm
-from utils import EarlyStopping
+from accent_recognition.models.utils import EarlyStopping
+from torch.utils.tensorboard import SummaryWriter
 # Setup device 
 # Stup device for device-agnostic code
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Add tensorboard module
+
+
+
+# Create a writer with all default settings
+writer = SummaryWriter()
 
 # Define the training step function
 def train_step(model: torch.nn.Module,
@@ -89,8 +97,9 @@ def train(model: torch.nn.Module,
           train_dataloader: torch.utils.data.DataLoader,
           test_dataloader: torch.utils.data.DataLoader,
           optimizer: torch.optim.Optimizer,
-          loss_fn: torch.nn.Module = nn.CrossEntropyLoss(),
-          epochs: int = 5):
+          loss_fn: torch.nn.Module,
+          epochs: int,
+          writer: SummaryWriter):
 
     # 2. Create empty results dictionary
     results = {"train_loss": [],
@@ -136,12 +145,33 @@ def train(model: torch.nn.Module,
         results["test_loss"].append(test_loss.item() if isinstance(test_loss, torch.Tensor) else test_loss)
         results["test_acc"].append(test_acc.item() if isinstance(test_acc, torch.Tensor) else test_acc)
 
+        
+        ### New: Experiment tracking ###
+        # Add loss results to SummaryWriter
+        writer.add_scalars(main_tag="Loss", 
+                           tag_scalar_dict={"train_loss": train_loss,
+                                            "test_loss": test_loss},
+                           global_step=epoch)
+
+        # Add accuracy results to SummaryWriter
+        writer.add_scalars(main_tag="Accuracy", 
+                           tag_scalar_dict={"train_acc": train_acc,
+                                            "test_acc": test_acc}, 
+                           global_step=epoch)
+        
+        # Track the PyTorch model architecture
+        writer.add_graph(model=model, input_to_model=torch.randn(32, 1, 13, 298).to(device))
+    
+        # Close the writer
+        writer.close()
+    
+    ### End new ###
 
     # 6. Return the filled results at the end of the epochs
     return results
 
 # Model training process with timer
-def train_model(seed, num_epochs, model, train_loader, val_loader, loss_fn, optimizer):
+def train_model(seed, num_epochs, model, train_loader, val_loader, loss_fn, optimizer, writer):
   # Set random seeds
   torch.manual_seed(seed)
   torch.cuda.manual_seed(seed)
@@ -156,7 +186,8 @@ def train_model(seed, num_epochs, model, train_loader, val_loader, loss_fn, opti
                           test_dataloader=val_loader,
                           optimizer=optimizer,
                           loss_fn=loss_fn,
-                          epochs=num_epochs)
+                          epochs=num_epochs,
+                          writer=writer)
 
   # End the timer and print out how long it took
   end_time = timer()
