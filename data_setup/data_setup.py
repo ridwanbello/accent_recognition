@@ -72,6 +72,111 @@ class AccentDataset(Dataset):
     return classes, class_to_idx
   
 
+# Accent Dataset With Mixin
+import random
+
+class AccentDatasetWithMixin(Dataset):
+    """Convert dataset into classification format with optional same-class mixin"""
+    def __init__(self,
+                 audio_path,
+                 transformation,
+                 target_sample_rate,
+                 num_samples,
+                 device,
+                 mix_prob=0.5): 
+        self.paths = list(audio_path.glob("*/*.wav"))
+        self.device = device
+        self.transformation = transformation.to(self.device)
+        self.target_sample_rate = target_sample_rate
+        self.num_samples = num_samples
+        self.mix_prob = mix_prob
+        self.classes, self.class_to_idx = self._find_classes(audio_path)
+
+        self.class_idx_to_indices = self._build_class_indices()
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, index):
+        audio_sample_path = self.paths[index]
+        signal, sr = torchaudio.load(audio_sample_path)
+        signal = signal.to(self.device)
+        signal = self._preprocess(signal, sr)
+        signal = self.transformation(signal).to(self.device)
+
+        class_name = audio_sample_path.parent.name
+        class_idx = self.class_to_idx[class_name]
+
+        # Do same-class mixin with probability
+        if random.random() < self.mix_prob:
+            # Pick another sample from same class (but different index)
+            same_class_indices = self.class_idx_to_indices[class_idx]
+            alt_index = index
+            while alt_index == index:
+                alt_index = random.choice(same_class_indices)
+            alt_sample_path = self.paths[alt_index]
+
+            alt_signal, alt_sr = torchaudio.load(alt_sample_path)
+            alt_signal = alt_signal.to(self.device)
+            alt_signal = self._preprocess(alt_signal, alt_sr)
+            alt_signal = self.transformation(alt_signal).to(self.device)
+
+            # Ensure both tensors have same shape
+            min_len = min(signal.shape[-1], alt_signal.shape[-1])
+            signal = signal[..., :min_len]
+            alt_signal = alt_signal[..., :min_len]
+
+            # Perform mixin (simple average)
+            lam = torch.distributions.Beta(0.4, 0.4).sample().item()
+            signal = lam * signal + (1 - lam) * alt_signal
+
+        return signal, class_idx
+
+    def _preprocess(self, signal, sr):
+        signal = self._resample_if_necessary(signal, sr)
+        signal = self._mix_down_if_necessary(signal)
+        signal = self._cut_if_necessary(signal)
+        signal = self._right_pad_if_necessary(signal)
+        return signal
+
+    def _cut_if_necessary(self, signal):
+        if signal.shape[1] > self.num_samples:
+            signal = signal[:, :self.num_samples]
+        return signal
+
+    def _right_pad_if_necessary(self, signal):
+        length_signal = signal.shape[1]
+        if length_signal < self.num_samples:
+            num_missing_samples = self.num_samples - length_signal
+            last_dim_padding = (0, num_missing_samples)
+            signal = torch.nn.functional.pad(signal, last_dim_padding)
+        return signal
+
+    def _resample_if_necessary(self, signal, sr):
+        if sr != self.target_sample_rate:
+            resampler = torchaudio.transforms.Resample(sr, self.target_sample_rate).to(self.device)
+            signal = resampler(signal)
+        return signal
+
+    def _mix_down_if_necessary(self, signal):
+        if signal.shape[0] > 1:
+            signal = torch.mean(signal, dim=0, keepdim=True)
+        return signal
+
+    def _find_classes(self, audio_path):
+        classes = sorted(entry.name for entry in os.scandir(audio_path) if entry.is_dir())
+        if not classes:
+            raise FileNotFoundError(f"Couldn't find any classes in {audio_path}.")
+        class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
+        return classes, class_to_idx
+
+    def _build_class_indices(self):
+        class_indices = {i: [] for i in range(len(self.classes))}
+        for idx, path in enumerate(self.paths):
+            class_name = path.parent.name
+            class_idx = self.class_to_idx[class_name]
+            class_indices[class_idx].append(idx)
+        return class_indices
 
 # Splitting the data return in Dataset format into 80 for training, 10 for validation and 10 for Testing
 def train_test_split_80_10_10(speech_data):
