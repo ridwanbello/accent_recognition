@@ -93,7 +93,7 @@ def download_gdrive_url(gdrive_link, filename):
     try:
         import gdown
     except:
-        !pip install gdown
+        pip install gdown
         import gdown
 
     zipped_filename = f"{filename}.zip"

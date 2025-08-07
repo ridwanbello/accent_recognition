@@ -4,7 +4,7 @@ import pandas as pd
 import torchaudio
 import os
 from torch.utils.data import random_split, DataLoader
-
+import random
 
 
 # Convert to Pytorch Dataset format
@@ -197,7 +197,114 @@ def train_test_split_80_10_10(speech_data):
 
     return train_loader, val_loader, test_loader
 
+# AccentDatasetWithAug
+
+class AccentDatasetWithAug(Dataset):
+    """Dataset with optional audio augmentations for accent recognition."""
+
+    def __init__(self,
+                 audio_path,
+                 transformation,
+                 target_sample_rate,
+                 num_samples,
+                 device,
+                 apply_augmentation=True):
+        self.paths = list(audio_path.glob("*/*.wav"))
+        self.device = device
+        self.transformation = transformation.to(self.device)
+        self.target_sample_rate = target_sample_rate
+        self.num_samples = num_samples
+        self.apply_augmentation = apply_augmentation
+        self.classes, self.class_to_idx = self._find_classes(audio_path)
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, index):
+        audio_sample_path = self.paths[index]
+        signal, sr = torchaudio.load(audio_sample_path)
+        signal = signal.to(self.device)
+        signal = self._resample_if_necessary(signal, sr)
+        signal = self._mix_down_if_necessary(signal)
+        signal = self._cut_if_necessary(signal)
+        signal = self._right_pad_if_necessary(signal)
+
+        # Apply audio augmentations before transformation
+        if self.apply_augmentation:
+            signal = self._apply_augmentations(signal)
+
+        signal = self.transformation(signal).to(self.device)
+
+        class_name = audio_sample_path.parent.name
+        class_idx = self.class_to_idx[class_name]
+        return signal, class_idx
+
+    def _cut_if_necessary(self, signal):
+        if signal.shape[1] > self.num_samples:
+            signal = signal[:, :self.num_samples]
+        return signal
+
+    def _right_pad_if_necessary(self, signal):
+        length_signal = signal.shape[1]
+        if length_signal < self.num_samples:
+            num_missing_samples = self.num_samples - length_signal
+            last_dim_padding = (0, num_missing_samples)
+            signal = torch.nn.functional.pad(signal, last_dim_padding)
+        return signal
+
+    def _resample_if_necessary(self, signal, sr):
+        if sr != self.target_sample_rate:
+            resampler = torchaudio.transforms.Resample(sr, self.target_sample_rate).to(self.device)
+            signal = resampler(signal)
+        return signal
+
+    def _mix_down_if_necessary(self, signal):
+        if signal.shape[0] > 1:
+            signal = torch.mean(signal, dim=0, keepdim=True)
+        return signal
+
+    def _apply_augmentations(self, signal):
+        # Time stretch: apply with 30% probability
+        if random.random() < 0.3:
+            rate = random.uniform(0.9, 1.1)
+            stretch = torchaudio.transforms.TimeStretch(n_freq=201).to(self.device)  # input must be complex STFT
+            spec = torchaudio.transforms.Spectrogram()(signal)
+            spec = torch.view_as_complex(spec) if spec.dim() == 4 else spec  # required for TimeStretch
+            signal = stretch(spec, rate)
+            signal = torchaudio.transforms.GriffinLim(n_iter=32).to(self.device)(signal)
+
+        # Pitch shift: apply with 30% probability
+        if random.random() < 0.3:
+            n_steps = random.uniform(-2.0, 2.0)
+            pitch_shift = torchaudio.transforms.PitchShift(
+                sample_rate=self.target_sample_rate,
+                n_steps=n_steps
+            ).to(self.device)
+            signal = pitch_shift(signal)
+
+        # Gaussian noise: apply with 30% probability
+        if random.random() < 0.3:
+            noise = torch.randn_like(signal) * 0.005
+            signal = signal + noise
+
+        # Volume gain: apply with 30% probability
+        if random.random() < 0.3:
+            gain_db = random.uniform(-6.0, 6.0)
+            vol = torchaudio.transforms.Vol(gain=gain_db, gain_type="db").to(self.device)
+            signal = vol(signal)
+
+        return signal
+
+    def _find_classes(self, audio_path):
+        classes = sorted(entry.name for entry in os.scandir(audio_path) if entry.is_dir())
+        if not classes:
+            raise FileNotFoundError(f"Couldn't find any classes in {audio_path}.")
+        class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
+        return classes, class_to_idx
+
 # Sample usage
 # train_loader, val_loader, test_loader = train_test_split_80_10_10(speech_data)
 # len(train_loader), len(val_loader), len(test_loader)
 # signal, label = next(iter(train_loader))
+
+
