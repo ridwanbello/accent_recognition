@@ -84,17 +84,19 @@ def download_accentdb(accent_list: List) -> Tuple[List, List]:
     print(f"\nThere are {len(audio_list)} audio samples returned.")
     return audio_list, label_list
 
-# Download GDrive URL
-gdrive_link = 'https://drive.google.com/uc?id=1GlXeJukQywElwGVu8ZMscES2wvpY8OCE'
-zip_file = "afrispeech-2k.zip"
-def download_gdrive_url(gdrive_link, zip_file):
-    "The id is the id of the GDrive link"
+# Download zipped file and unzip with Google Drive URL
+def download_gdrive_url(gdrive_link, filename):
+    """
+    Sample gdrive_link = 'https://drive.google.com/uc?id=1GlXeJukQywElwGVu8ZMscES2wvpY8OCE'
+    Sample filename = "afrispeech-2k"
+    """
     try:
         import gdown
     except:
         !pip install gdown
         import gdown
 
+    zipped_filename = f"{filename}.zip"
     data_path = Path("data/")
 
     if data_path.is_dir():
@@ -104,12 +106,14 @@ def download_gdrive_url(gdrive_link, zip_file):
         data_path.mkdir(parents=True, exist_ok=True)
     # Google Drive link to download the data
     url = gdrive_link
-    output_filename = data_path / zip_file
+    output_filename = data_path / zipped_filename
     gdown.download(url, str(output_filename), quiet=False)
-    zipped_path = Path(data_path / zip_file)
-    extracted_path = Path(data_path / "extracted_data")
+    zipped_path = Path(data_path / zipped_filename)
+    extracted_path = Path(data_path / filename)
     # Unzip the data
     with zipfile.ZipFile(zipped_path, 'r') as zip_ref:
         zip_ref.extractall(path = extracted_path)
 
-    Path(extracted_path / "data")
+    os.remove(zipped_path)
+
+    print("File successfully downloaded and extracted")
