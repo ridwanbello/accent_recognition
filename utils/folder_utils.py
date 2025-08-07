@@ -145,3 +145,7 @@ def download_zip(zip_file_path):
       print(f"Error: The file '{zip_file_path}' was not found.")
   except Exception as e:
       print(f"An error occurred: {e}")
+
+
+# Move folder from Colab dir to GDrive dir
+!cp -r /content/afrispeech/ /content/drive/MyDrive/afrispeech_data/

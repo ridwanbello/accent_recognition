@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 from typing import List, Tuple
 import tarfile
+import zipfile
 
 def download_accentdb(accent_list: List) -> Tuple[List, List]:
     """ Download the AccentDB dataset from Google Drive and return as the List in tuples
@@ -83,4 +84,32 @@ def download_accentdb(accent_list: List) -> Tuple[List, List]:
     print(f"\nThere are {len(audio_list)} audio samples returned.")
     return audio_list, label_list
 
-# Commit 3:  Added extra comment, minor error changes from data_path to main_path
+# Download GDrive URL
+gdrive_link = 'https://drive.google.com/uc?id=1GlXeJukQywElwGVu8ZMscES2wvpY8OCE'
+zip_file = "afrispeech-2k.zip"
+def download_gdrive_url(gdrive_link, zip_file):
+    "The id is the id of the GDrive link"
+    try:
+        import gdown
+    except:
+        !pip install gdown
+        import gdown
+
+    data_path = Path("data/")
+
+    if data_path.is_dir():
+        print(f"{data_path} directory exists.")
+    else:
+        print(f"Did not find {data_path} directory, creating one...")
+        data_path.mkdir(parents=True, exist_ok=True)
+    # Google Drive link to download the data
+    url = gdrive_link
+    output_filename = data_path / zip_file
+    gdown.download(url, str(output_filename), quiet=False)
+    zipped_path = Path(data_path / zip_file)
+    extracted_path = Path(data_path / "extracted_data")
+    # Unzip the data
+    with zipfile.ZipFile(zipped_path, 'r') as zip_ref:
+        zip_ref.extractall(path = extracted_path)
+
+    Path(extracted_path / "data")
